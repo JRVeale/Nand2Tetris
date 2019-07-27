@@ -17,7 +17,7 @@
 	@KBD			//Check for keyboard input
 	D=M																						
 	@ON																						
-	D;JNE				//If keyboard input go to ON										
+	D;JNE				//If keyboard input go to ON 										
 
 	(OFF)	
 		@onoff																					
