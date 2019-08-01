@@ -40,4 +40,34 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+	
+	ALU(x=Dout,y=AMout,zx=instruction[11],nx=instruction[10],zy=instruction[9],ny=instruction[8],f=instruction[7],no=instruction[6],out=outM,out=ALUoutM,zr=ALUzr,ng=ALUng);
+	
+	//D register
+	And(a=instruction[4],b=instruction[15],out=destD);	
+	DRegister(in=ALUoutM,load=destD,out=Dout);					//Write to D IF is a c-instruction AND dest includes D
+	
+	//A register
+	Not(in=instruction[15],out=aInstr);
+	Mux16(a=ALUoutM,b=instruction,sel=aInstr,out=Ain);			//Load new A *from instruction* if is an a-instruction
+	Or(a=instruction[5],b=aInstr,out=Aload);
+	ARegister(in=Ain,load=Aload,out=Aout,out[0..14]=addressM);	//Write to A IF is an a-instruction OR dest includes A
+	
+	//WriteM?
+	And(a=instruction[15],b=instruction[3],out=writeM);			//Write output to memory[A] IF is a c-instruction AND dest includes M
+	
+	//A or M?
+	Mux16(a=Aout,b=inM,sel=instruction[12],out=AMout);
+	
+	//Program Counter
+	And(a=ALUng,b=instruction[2],out=jng);			//Jump if negative
+	And(a=ALUzr,b=instruction[1],out=jeq);			//Jump if equal
+	Or(a=ALUzr,b=ALUng,out=lte);
+	Not(in=lte,out=positive);
+	And(a=positive,b=instruction[0],out=jpos);		//Jump if positive
+	Or(a=jng,b=jeq,out=jle);
+	Or(a=jle,b=jpos,out=jumpifc);					
+	And(a=jumpifc,b=instruction[15],out=jump);		//Jump if any of the above jumps AND c instruction
+	Not(in=jump,out=PCinc);							//Otherwise, increment
+	PC(in=Aout,load=jump,inc=PCinc,reset=reset,out[0..14]=pc);
 }
