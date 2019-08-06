@@ -1,10 +1,24 @@
 class Assembler:
 
     def assemble(self,filepath):
-        lines = self.loadasm(filepath)
-        barelines = self.removewhitespace(lines)
-        binarylines = self.translate(barelines)
-        self.savehack(binarylines,filepath)
+        #reset for next assembly
+        self.symboltable = self.initsymboltable()
+        self.nextfreeRAM = 16
+
+        lines = self.loadasm(filepath)                          #get lines
+        barelines = self.removewhitespace(lines)                #remove whitespace and comments
+        nolabellines = self.findandremovelabels(barelines)      #adds labels to symbol table and outputs barelines without the label lines
+        binarylines = self.translate(nolabellines)              #translate into hack language line by line #TODO: Add call to symbol handler in translate.
+        self.savehack(binarylines,filepath)                     #save binary lines
+
+    def initsymboltable(self):
+        table = dict(SP=0,LCL=1,ARG=2,THIS=3,THAT=4)
+        for i in range(16):
+            key = "R" + str(i)
+            table.update({key:i})
+        table.update({"SCREEN":16384})
+        table.update({"KBD":24576})
+        return table
 
 
     def loadasm(self,filepath):
@@ -34,6 +48,18 @@ class Assembler:
         else:
             return line
 
+    def findandremovelabels(self,lines):
+        nolabellines = []
+        for line in lines:
+            if line.startswith("("):
+                #is a label
+                newkey = line[1:-1]
+                self.symboltable.update({newkey:len(nolabellines)})
+            else:
+                #is an actual instruction
+                nolabellines.append(line)
+        return nolabellines
+
     def translate(self,asmlines):
         binarylines = []
         for line in asmlines:
@@ -46,13 +72,38 @@ class Assembler:
         return binarylines
 
     def ainstrtobinary(self,asm):
-        address = str(bin(int(asm[1:])))[2:]
+        rawaddress = asm[1:]
+        intaddress = self.checksymbol(rawaddress)   #if symbol, checks if in table, and adds if needed (otherwise returns int)
+        address = str(bin(intaddress))[2:]
         assert (len(address) < 16), "address too large in: " + asm + " " + address
         padlength = 16 - len(address)
         padding = "0"*padlength
         binaryline = padding + address
         assert (len(binaryline) == 16), "bad translation of: " + asm
         return binaryline
+
+    def checksymbol(self,key):
+        if self.representspositiveint(key):
+            intaddress = int(key)
+        else:
+            #is a symbol
+            try:
+                intaddress = self.symboltable[key]
+            except KeyError:
+                intaddress = self.nextfreeRAM
+                self.symboltable.update({key:intaddress})
+                self.nextfreeRAM += 1
+        return intaddress
+
+    def representspositiveint(self,s):
+        try:
+            i = int(s)
+            if i < 0:
+                return False
+            else:
+                return True
+        except ValueError:
+            return False
 
     def cinstrtobinary(self,asm):
         comp, dest, jump = self.splitcinstr(asm)
@@ -163,3 +214,6 @@ a.assemble(r"C:\Users\James\Documents\GitHub\Nand2Tetris\nand2tetris\projects\06
 a.assemble(r"C:\Users\James\Documents\GitHub\Nand2Tetris\nand2tetris\projects\06\max\MaxL.asm")
 a.assemble(r"C:\Users\James\Documents\GitHub\Nand2Tetris\nand2tetris\projects\06\rect\RectL.asm")
 a.assemble(r"C:\Users\James\Documents\GitHub\Nand2Tetris\nand2tetris\projects\06\pong\PongL.asm")
+a.assemble(r"C:\Users\James\Documents\GitHub\Nand2Tetris\nand2tetris\projects\06\max\Max.asm")
+a.assemble(r"C:\Users\James\Documents\GitHub\Nand2Tetris\nand2tetris\projects\06\rect\Rect.asm")
+a.assemble(r"C:\Users\James\Documents\GitHub\Nand2Tetris\nand2tetris\projects\06\pong\Pong.asm")

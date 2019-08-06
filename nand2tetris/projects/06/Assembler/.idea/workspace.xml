@@ -4,7 +4,6 @@
     <list default="true" id="def187ad-8ff6-42c0-9aaf-6ddf0f950377" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/venv/Scripts/HACKAssembler.py" beforeDir="false" afterPath="$PROJECT_DIR$/venv/Scripts/HACKAssembler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../tools/bin/Assembler.dat" beforeDir="false" afterPath="$PROJECT_DIR$/../../../tools/bin/Assembler.dat" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -17,14 +16,15 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/venv/Scripts/HACKAssembler.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="270">
-              <caret line="51" column="31" lean-forward="true" selection-start-line="51" selection-start-column="31" selection-end-line="51" selection-end-column="31" />
+            <state relative-caret-position="163">
+              <caret line="64" column="29" selection-start-line="64" selection-start-column="29" selection-end-line="64" selection-end-column="29" />
               <folding>
                 <element signature="e#111#202#0" />
                 <element signature="e#261#387#0" />
-                <element signature="e#416#657#0" />
                 <element signature="e#602#671#0" />
-                <element signature="e#866#1171#0" />
+                <element signature="e#2767#3244#0" />
+                <element signature="e#3431#3658#0" />
+                <element signature="e#3708#3884#0" />
                 <element signature="e#1437#1566#0" />
                 <element signature="e#1775#2103#0" />
                 <element signature="e#2579#3810#0" />
@@ -46,6 +46,7 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
+      <find>findlabels</find>
       <find>print</find>
     </findStrings>
   </component>
@@ -228,14 +229,15 @@
     <entry file="file://$PROJECT_DIR$/venv/HACKAssembler.py" />
     <entry file="file://$PROJECT_DIR$/venv/Scripts/HACKAssembler.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="51" column="31" lean-forward="true" selection-start-line="51" selection-start-column="31" selection-end-line="51" selection-end-column="31" />
+        <state relative-caret-position="163">
+          <caret line="64" column="29" selection-start-line="64" selection-start-column="29" selection-end-line="64" selection-end-column="29" />
           <folding>
             <element signature="e#111#202#0" />
             <element signature="e#261#387#0" />
-            <element signature="e#416#657#0" />
             <element signature="e#602#671#0" />
-            <element signature="e#866#1171#0" />
+            <element signature="e#2767#3244#0" />
+            <element signature="e#3431#3658#0" />
+            <element signature="e#3708#3884#0" />
             <element signature="e#1437#1566#0" />
             <element signature="e#1775#2103#0" />
             <element signature="e#2579#3810#0" />
