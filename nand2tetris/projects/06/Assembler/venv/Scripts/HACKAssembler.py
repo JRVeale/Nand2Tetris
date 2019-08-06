@@ -23,7 +23,7 @@ class Assembler:
         cleanlines = []
         for line in rawasm:
             stripped = line.strip()
-            nocomment = self.removecomments(stripped,"//")
+            nocomment = self.removecomments(stripped,"//").strip()
             if nocomment != "":
                 cleanlines.append(nocomment)
         return cleanlines
