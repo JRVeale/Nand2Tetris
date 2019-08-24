@@ -74,11 +74,14 @@ class Parser:
     def line(self):
         return self.lines[self.currentline]
 
+class CodeWriterLookupError(LookupError):
+    '''raise this when no translation available'''
 
 class CodeWriter:
 
     def __init__(self, pathout):
         self.fout = open(pathout, "w+")
+        self.boolcount = 0
 
     def a_instr(self, valuestr):
         return "@" + valuestr + "\n"
@@ -86,11 +89,29 @@ class CodeWriter:
     def incrM(self):
         return "M=M+1\n"
 
+    def inplacestackop(self,operation):
+        if operation == "not":
+            temp = "!"
+        elif operation == "neg":
+            temp = "-"
+        else:
+            raise CodeWriterLookupError("Bad in place stack operator - " + operation)
+        return self.a_instr("SP")+"A=M-1\nM=" + temp + "M"
+
+
     def pushDtostack(self):
         return self.a_instr("SP") + "A=M\nM=D\n" + self.a_instr("SP") + self.incrM() + "\n"
 
     def popstackto(self, dest, comp):
         return self.a_instr("SP") + "AM=M-1\n" + dest + "=" + comp + "\n\n"
+
+    def boolcompareD(self, jump):
+        label = "BOOL" + str(self.boolcount)
+        endlabel = "END" + label
+        temp = self.a_instr(label) + "D," + jump + "\nD=0\n"
+        temp += self.a_instr(endlabel) + "0,JMP\n(" + label +")\nD=1\n("
+        temp += endlabel + ")\n"
+        return temp
 
     def writeComment(self, comment):
         self.fout.write(r"// " + comment)
@@ -99,13 +120,51 @@ class CodeWriter:
 
         hackstring = ""
 
-        if operation == "add":
-            #pop to D, pop and add to D, push D
-            hackstring += self.popstackto("D","M")
-            hackstring += self.popstackto("D","D+M")
-            hackstring += self.pushDtostack()
+        if operation in ["neg", "not"]:
+            # in-place
+            hackstring += self.inplacestackop(operation)
 
-        #TODO
+        else:
+            hackstring += self.popstackto("D", "M")
+
+            if operation in ["eq","gt","lt"]:
+                # boolean
+                hackstring += self.popstackto("D", "M-D")
+                if operation == "eq":
+                    jump = "JEQ"
+                elif operation == "gt":
+                    jump = "JGT"
+                elif operation == "lt":
+                    jump = "JLT"
+                else:
+                    raise CodeWriterLookupError("Bad boolean operator! - " + operation)
+                hackstring += self.boolcompareD(jump)
+                self.boolcount += 1
+
+            elif operation in ["add", "sub", "and", "or"]:
+                #comp
+                if operation == "add":
+                    #pop to D, pop and add to D, push
+                    comp = "D+M"
+
+                elif operation == "sub":
+                    # pop to D, subtract D from next pop, push
+                    comp = "M-D"
+
+                elif operation == "and":
+                    # pop to D, AND D with next pop, push
+                    comp = "D&M"
+
+                elif operation == "or":
+                    # pop to D, OR D with next pop, push D
+                    comp = "D|M"
+
+                hackstring += self.popstackto("D",comp)
+
+            else:
+                raise CodeWriterLookupError("Bad operator! - " + operation)
+
+            hackstring += self.pushDtostack()
 
         self.fout.write(hackstring)
 
