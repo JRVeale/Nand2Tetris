@@ -112,8 +112,8 @@ class CodeWriter:
         label = "BOOL" + str(self.boolcount)
         endlabel = "END" + label
         temp = self.a_instr(label) + "D," + jump + "\nD=0\n"
-        temp += self.a_instr(endlabel) + "0,JMP\n(" + label +")\nD=1\n("
-        temp += endlabel + ")\n"
+        temp += self.a_instr(endlabel) + "0,JMP\n(" + label +")\nD=-1\n("
+        temp += endlabel + ")\n\n"
         return temp
 
     def storevalueoraddressofsegmenti(self, segment, index, push):
@@ -251,7 +251,7 @@ class CodeWriter:
 
             elif segment == "temp":
                 hackstring += self.popstackto("D","M")
-                hackstring += self.a_instr(str(int(index)+5)) + "A=M\nM=D\n"
+                hackstring += self.a_instr(str(int(index)+5)) + "M=D\n"
 
             elif segment == "pointer":
                 hackstring += self.popstackto("D","M")
@@ -262,7 +262,7 @@ class CodeWriter:
                 else:
                     raise ParsingError("pointer is " + index
                                        + " must only be 0 or 1")
-                hackstring += self.a_instr(tempaddress) + "A=M\nM=D\n"
+                hackstring += self.a_instr(tempaddress) + "M=D\n"
 
         self.fout.write(hackstring)
 

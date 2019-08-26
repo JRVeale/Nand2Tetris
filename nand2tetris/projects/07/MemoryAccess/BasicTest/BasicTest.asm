@@ -164,7 +164,6 @@ AM=M-1
 D=M
 
 @11
-A=M
 M=D
 // push local 0
 @LCL

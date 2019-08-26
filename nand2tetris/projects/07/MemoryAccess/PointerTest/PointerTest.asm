@@ -14,7 +14,6 @@ AM=M-1
 D=M
 
 @THIS
-A=M
 M=D
 // push constant 3040
 @3040
@@ -32,7 +31,6 @@ AM=M-1
 D=M
 
 @THAT
-A=M
 M=D
 // push constant 32
 @32
