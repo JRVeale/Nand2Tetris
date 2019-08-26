@@ -4,6 +4,7 @@
 ## I'll bother to use the suggested design this time.
 
 from enum import Enum
+import os
 
 class CommandType(Enum):
     C_ARITHMETIC = 1
@@ -85,6 +86,7 @@ class CodeWriter:
     def __init__(self, pathout):
         self.fout = open(pathout, "w+")
         self.boolcount = 0
+        self.filename = os.path.split(pathout)[1][:-2]
 
     def a_instr(self, valuestr):
         return "@" + valuestr + "\n"
@@ -111,9 +113,9 @@ class CodeWriter:
     def boolcompareD(self, jump):
         label = "BOOL" + str(self.boolcount)
         endlabel = "END" + label
-        temp = self.a_instr(label) + "D," + jump + "\nD=0\n"
-        temp += self.a_instr(endlabel) + "0,JMP\n(" + label +")\nD=-1\n("
-        temp += endlabel + ")\n\n"
+        temp = self.a_instr(label) + "D," + jump + "\nD=0\n" \
+               +  self.a_instr(endlabel) + "0,JMP\n(" + label +")\nD=-1\n(" \
+               +  endlabel + ")\n\n"
         return temp
 
     def storevalueoraddressofsegmenti(self, segment, index, push):
@@ -137,6 +139,9 @@ class CodeWriter:
                                    + " must be 0 or 1")
             return self.a_instr(tempaddress) + "D=M\n\n"
 
+        elif segment == "static":
+            temp = self.a_instr(self.filename + index) + "D=M\n\n"
+
         elif segment in ["local","argument","this","that"]:
 
             if segment == "local":
@@ -148,8 +153,7 @@ class CodeWriter:
             elif segment == "that":
                 base = "THAT"
 
-            temp = self.a_instr(base) + "D=M\n"
-            temp += self.a_instr(index)
+            temp = self.a_instr(base) + "D=M\n" +  self.a_instr(index)
 
             # the below could be reorganised to make this Translator simpler
             # to read, but would cause an extra operation to be performed
@@ -230,12 +234,12 @@ class CodeWriter:
         if command == CommandType.C_PUSH:
 
             if segment in ["constant","local","argument","this","that","temp",
-                           "pointer"]:
+                           "pointer", "static"]:
 
                 hackstring += self.getsegmentivalueinD(segment, index)
 
             else:
-                raise CodeWriterLookupError(segment + " - not yet supported")
+                raise CodeWriterLookupError(segment + " - not supported")
 
             hackstring += self.pushDtostack()
 
@@ -245,13 +249,13 @@ class CodeWriter:
                 raise CodeWriterLookupError("Cannot pop to constant segment!")
 
             elif segment in ["local","argument","this","that"]:
-                hackstring += self.getsegmentiaddressinR13(segment, index)
-                hackstring += self.popstackto("D","M")
-                hackstring += self.a_instr("R13") + "A=M\nM=D\n"
+                hackstring += self.getsegmentiaddressinR13(segment, index) \
+                              + self.popstackto("D","M") \
+                              + self.a_instr("R13") + "A=M\nM=D\n"
 
             elif segment == "temp":
-                hackstring += self.popstackto("D","M")
-                hackstring += self.a_instr(str(int(index)+5)) + "M=D\n"
+                hackstring += self.popstackto("D","M") \
+                              + self.a_instr(str(int(index)+5)) + "M=D\n"
 
             elif segment == "pointer":
                 hackstring += self.popstackto("D","M")
@@ -263,6 +267,11 @@ class CodeWriter:
                     raise ParsingError("pointer is " + index
                                        + " must only be 0 or 1")
                 hackstring += self.a_instr(tempaddress) + "M=D\n"
+
+            elif segment == "static":
+                hackstring += self.popstackto("D","M") \
+                              + self.a_instr(self.filename + index) \
+                              + "M=D\n"
 
         self.fout.write(hackstring)
 

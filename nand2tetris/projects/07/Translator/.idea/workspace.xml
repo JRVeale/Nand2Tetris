@@ -15,10 +15,10 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/venv/Scripts/VMTranslator.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="466">
-              <caret line="264" column="59" selection-start-line="264" selection-start-column="59" selection-end-line="264" selection-end-column="59" />
+            <state relative-caret-position="463">
+              <caret line="273" column="77" selection-start-line="273" selection-start-column="77" selection-end-line="273" selection-end-column="77" />
               <folding>
-                <element signature="e#3223#4012#0" />
+                <element signature="e#137#158#0" expanded="true" />
                 <element signature="e#4056#4113#0" />
                 <element signature="e#4195#4238#0" />
                 <element signature="e#2776#2818#0" />
@@ -210,10 +210,10 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/venv/Scripts/VMTranslator.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="466">
-          <caret line="264" column="59" selection-start-line="264" selection-start-column="59" selection-end-line="264" selection-end-column="59" />
+        <state relative-caret-position="463">
+          <caret line="273" column="77" selection-start-line="273" selection-start-column="77" selection-end-line="273" selection-end-column="77" />
           <folding>
-            <element signature="e#3223#4012#0" />
+            <element signature="e#137#158#0" expanded="true" />
             <element signature="e#4056#4113#0" />
             <element signature="e#4195#4238#0" />
             <element signature="e#2776#2818#0" />
