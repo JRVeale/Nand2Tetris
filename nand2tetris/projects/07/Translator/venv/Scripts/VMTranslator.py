@@ -77,6 +77,9 @@ class Parser:
 class CodeWriterLookupError(LookupError):
     '''raise this when no translation available'''
 
+class ParsingError(ValueError):
+    '''raise this when bad VM Code provided'''
+
 class CodeWriter:
 
     def __init__(self, pathout):
@@ -112,6 +115,50 @@ class CodeWriter:
         temp += self.a_instr(endlabel) + "0,JMP\n(" + label +")\nD=1\n("
         temp += endlabel + ")\n"
         return temp
+
+    def storevalueoraddressofsegmenti(self, segment, index, push):
+
+        if segment == "constant":
+            return self.a_instr(index) + "D=A\n\n"
+
+        elif segment == "temp":
+            if int(index) > 8:
+                raise ParsingError("temp index cannot be greater than 8")
+            if push:
+                return self.a_instr(str(int(index)+5)) + "D=A\n\n"
+            else:
+                return
+
+        elif segment in ["local","argument","this","that"]:
+
+            if segment == "local":
+                base = "LCL"
+            elif segment == "argument":
+                base = "ARG"
+            elif segment == "this":
+                base = "THIS"
+            elif segment == "that":
+                base = "THAT"
+
+            temp = self.a_instr(base) + "D=M\n"
+            temp += self.a_instr(index)
+
+            # the below could be reorganised to make this Translator simpler
+            # to read, but would cause an extra operation to be performed
+            # every time we pop to a segment (causing roughly 8% slower
+            # operation)
+            if push:
+                temp += "A=D+A\nD=M\n\n"
+            else:
+                temp += "D=D+A\n" + self.a_instr("R13") + "M=D\n\n"
+
+        return temp
+
+    def getsegmentivalueinD(self,segment,index):
+        return self.storevalueoraddressofsegmenti(segment,index,push=True)
+
+    def getsegmentiaddressinR13(self,segment,index):
+        return self.storevalueoraddressofsegmenti(segment,index,push=False)
 
     def writeComment(self, comment):
         self.fout.write(r"// " + comment)
@@ -174,11 +221,28 @@ class CodeWriter:
 
         if command == CommandType.C_PUSH:
 
-            if segment == "constant":
+            if segment in ["constant","local","argument","this","that","temp"]:
 
-                hackstring += self.a_instr(index) + "D=A\n\n"
+                hackstring += self.getsegmentivalueinD(segment, index)
+
+            else:
+                raise CodeWriterLookupError(segment + " - not yet supported")
 
             hackstring += self.pushDtostack()
+
+        elif command == CommandType.C_POP:
+
+            if segment == "constant":
+                raise CodeWriterLookupError("Cannot pop to constant segment!")
+
+            elif segment in ["local","argument","this","that"]:
+                hackstring += self.getsegmentiaddressinR13(segment, index)
+                hackstring += self.popstackto("D","M")
+                hackstring += self.a_instr("R13") + "A=M\nM=D\n"
+
+            elif segment == "temp":
+                hackstring += self.popstackto("D","M")
+                hackstring += self.a_instr(str(int(index)+5)) + "A=M\nM=D\n"
 
         self.fout.write(hackstring)
 
