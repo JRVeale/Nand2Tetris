@@ -86,7 +86,7 @@ class CodeWriter:
     def __init__(self, pathout):
         self.fout = open(pathout, "w+")
         self.boolcount = 0
-        self.filename = os.path.split(pathout)[1][:-2]
+        self.filename = os.path.split(pathout)[1][:-3]
 
     def a_instr(self, valuestr):
         return "@" + valuestr + "\n"
@@ -94,7 +94,7 @@ class CodeWriter:
     def incrM(self):
         return "M=M+1\n"
 
-    def inplacestackop(self,operation):
+    def inplacestackop(self, operation):
         if operation == "not":
             temp = "!"
         elif operation == "neg":
@@ -103,12 +103,14 @@ class CodeWriter:
             raise CodeWriterLookupError("Bad in place stack operator - " + operation)
         return self.a_instr("SP")+"A=M-1\nM=" + temp + "M"
 
-
     def pushDtostack(self):
         return self.a_instr("SP") + "A=M\nM=D\n" + self.a_instr("SP") + self.incrM() + "\n"
 
     def popstackto(self, dest, comp):
         return self.a_instr("SP") + "AM=M-1\n" + dest + "=" + comp + "\n\n"
+
+    def popstacktoD(self):
+        return self.popstackto("D","M")
 
     def boolcompareD(self, jump):
         label = "BOOL" + str(self.boolcount)
@@ -117,60 +119,6 @@ class CodeWriter:
                +  self.a_instr(endlabel) + "0,JMP\n(" + label +")\nD=-1\n(" \
                +  endlabel + ")\n\n"
         return temp
-
-    def storevalueoraddressofsegmenti(self, segment, index, push):
-
-        if segment == "constant":
-            return self.a_instr(index) + "D=A\n\n"
-
-        elif segment == "temp":
-            if int(index) > 8:
-                raise ParsingError("temp index cannot be greater than 8")
-            if push:
-                return self.a_instr(str(int(index)+5)) + "D=M\n\n"
-
-        elif segment == "pointer":
-            if index == "0":
-                tempaddress = "THIS"
-            elif index == "1":
-                tempaddress = "THAT"
-            else:
-                raise ParsingError("pointer index is " + index
-                                   + " must be 0 or 1")
-            return self.a_instr(tempaddress) + "D=M\n\n"
-
-        elif segment == "static":
-            temp = self.a_instr(self.filename + index) + "D=M\n\n"
-
-        elif segment in ["local","argument","this","that"]:
-
-            if segment == "local":
-                base = "LCL"
-            elif segment == "argument":
-                base = "ARG"
-            elif segment == "this":
-                base = "THIS"
-            elif segment == "that":
-                base = "THAT"
-
-            temp = self.a_instr(base) + "D=M\n" +  self.a_instr(index)
-
-            # the below could be reorganised to make this Translator simpler
-            # to read, but would cause an extra operation to be performed
-            # every time we pop to a segment (causing roughly 8% slower
-            # operation)
-            if push:
-                temp += "A=D+A\nD=M\n\n"
-            else:
-                temp += "D=D+A\n" + self.a_instr("R13") + "M=D\n\n"
-
-        return temp
-
-    def getsegmentivalueinD(self,segment,index):
-        return self.storevalueoraddressofsegmenti(segment,index,push=True)
-
-    def getsegmentiaddressinR13(self,segment,index):
-        return self.storevalueoraddressofsegmenti(segment,index,push=False)
 
     def writeComment(self, comment):
         self.fout.write(r"// " + comment)
@@ -223,57 +171,127 @@ class CodeWriter:
             else:
                 raise CodeWriterLookupError("Bad operator! - " + operation)
 
-            hackstring += self.pushDtostack()
+            hackstring += self.pushDtostack() + "\n"
 
         self.fout.write(hackstring)
 
     def writePushPop(self, command, segment, index):
 
-        hackstring = ""
-
         if command == CommandType.C_PUSH:
 
-            if segment in ["constant","local","argument","this","that","temp",
-                           "pointer", "static"]:
-
-                hackstring += self.getsegmentivalueinD(segment, index)
-
-            else:
-                raise CodeWriterLookupError(segment + " - not supported")
-
-            hackstring += self.pushDtostack()
+            self.fout.write(self.buildpush(segment, index))
 
         elif command == CommandType.C_POP:
 
-            if segment == "constant":
-                raise CodeWriterLookupError("Cannot pop to constant segment!")
+            self.fout.write(self.buildpop(segment, index))
 
-            elif segment in ["local","argument","this","that"]:
-                hackstring += self.getsegmentiaddressinR13(segment, index) \
-                              + self.popstackto("D","M") \
-                              + self.a_instr("R13") + "A=M\nM=D\n"
+        else:
+            raise CodeWriterLookupError("Incorrect command type for PushPop")
 
-            elif segment == "temp":
-                hackstring += self.popstackto("D","M") \
-                              + self.a_instr(str(int(index)+5)) + "M=D\n"
+    def buildpush(self, segment, index):
 
-            elif segment == "pointer":
-                hackstring += self.popstackto("D","M")
-                if index == "0":
-                    tempaddress = "THIS"
-                elif index == "1":
-                    tempaddress = "THAT"
-                else:
-                    raise ParsingError("pointer is " + index
-                                       + " must only be 0 or 1")
-                hackstring += self.a_instr(tempaddress) + "M=D\n"
+        if segment == "constant":
 
-            elif segment == "static":
-                hackstring += self.popstackto("D","M") \
-                              + self.a_instr(self.filename + index) \
-                              + "M=D\n"
+            registerintoD = "A"
 
-        self.fout.write(hackstring)
+        else:
+
+            registerintoD = "M"
+
+        return self.putcorrectaddressinA(segment, index) + "D=" \
+               + registerintoD + "\n\n" + self.pushDtostack() + "\n"
+
+    def buildpop(self, segment, index):
+
+        if segment == "constant":
+
+            raise ParsingError("Cannot pop to constant segment!")
+
+        address, reltobaseaddress = self.getaddress(segment, index)
+
+        if reltobaseaddress:
+
+            prefix = self.a_instr(address) + "D=M\n" + self.a_instr(index) \
+                     + "D=D+A\n\n" + self.a_instr("R13") + "M+D\n\n"
+            suffix = self.a_instr("R13") + "A=M\nM=D\n\n"
+
+        else:
+
+            prefix = ""
+            suffix = self.a_instr(address) + "M=D\n\n"
+
+        return prefix + self.popstacktoD() + suffix + "\n"
+
+    def putcorrectaddressinA(self, segment, index):
+
+        address, reltobaseaddress = self.getaddress(segment, index)
+
+        if reltobaseaddress:
+
+            suffix = "D=M\n" + self.a_instr(index) + "A=D+A\n\n"
+
+        else:
+
+            suffix = "\n"
+
+        return self.a_instr(address) + suffix
+
+    def getaddress(self, segment, index):
+
+        reltobaseaddress = False
+
+        if segment == "constant":
+
+            address = index
+
+        elif segment == "temp":
+
+            address = str(int(index) + 5)
+
+        elif segment == "pointer":
+
+            if index == "0":
+
+                address = "THIS"
+
+            elif index == "1":
+
+                address = "THAT"
+
+            else:
+
+                raise ParsingError("Attempted to access pointer " + index
+                                   + ", must be 0 or 1")
+
+        elif segment == "static":
+
+            address = self.filename + index
+
+        elif segment == "local":
+
+            address = "LCL"
+            reltobaseaddress = True
+
+        elif segment == "argument":
+
+            address = "ARG"
+            reltobaseaddress = True
+
+        elif segment == "this":
+
+            address = "THIS"
+            reltobaseaddress = True
+
+        elif segment == "that":
+
+            address = "THAT"
+            reltobaseaddress = True
+
+        else:
+
+            raise ParsingError(segment + " segment was not recognised.")
+
+        return address, reltobaseaddress
 
     def close(self):
         self.fout.close()
