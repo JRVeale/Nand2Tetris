@@ -1,0 +1,113 @@
+//PUSHPOP
+
+
+// push constant i
+
+@i
+D=A
+
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// push local/argument/this/that i
+
+@LCL/ARG/THIS/THAT
+D=M	//put base memory address in D
+@i
+A=D+A	//access base memory adress for segment plus i
+
+D=M	//hold value in segment(i) in D
+
+@SP
+A=M
+M=D	//push to stack
+@SP
+M=M+1
+
+
+// pop local/argument/this/that i
+
+@LCL/ARG/THIS/THAT
+D=M	//put base memory address in D
+@i
+D=D+A	//put base memory adress for segment plus i in D
+
+@R13
+M=D	//store temporarily in R13
+
+@SP	//pop from stack to D
+AM=M-1
+D=M
+
+@R13	//move from D to segment(i) (as stored in R13)
+A=M
+M=D
+
+
+// push temp i
+
+@(i+5)
+D=M
+
+@SP
+A=M
+M=D	//push to stack
+@SP
+M=M+1
+
+
+// pop temp i
+
+@SP	//pop from stack to D
+AM=M-1
+D=M
+
+@(i+5)	//move from D to i+5
+M=D
+
+
+// push pointer 0/1
+
+@THIS/THAT
+D=M
+
+@SP	//push to stack
+A=M
+M=D
+@SP
+M=M+1
+
+
+// pop pointer 0/1
+@SP	//pop from stack to D
+AM=M-1
+D=M
+
+@THIS/THAT
+M=D
+
+
+// push static i
+
+@Foo.i
+D=M
+
+@SP	//push to stack
+A=M
+M=D
+@SP
+M=M+1
+
+
+// pop static i
+
+@SP	//pop from stack to D
+AM=M-1
+D=M
+
+@Foo.i
+M=D
