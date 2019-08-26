@@ -125,9 +125,17 @@ class CodeWriter:
             if int(index) > 8:
                 raise ParsingError("temp index cannot be greater than 8")
             if push:
-                return self.a_instr(str(int(index)+5)) + "D=A\n\n"
+                return self.a_instr(str(int(index)+5)) + "D=M\n\n"
+
+        elif segment == "pointer":
+            if index == "0":
+                tempaddress = "THIS"
+            elif index == "1":
+                tempaddress = "THAT"
             else:
-                return
+                raise ParsingError("pointer index is " + index
+                                   + " must be 0 or 1")
+            return self.a_instr(tempaddress) + "D=M\n\n"
 
         elif segment in ["local","argument","this","that"]:
 
@@ -221,7 +229,8 @@ class CodeWriter:
 
         if command == CommandType.C_PUSH:
 
-            if segment in ["constant","local","argument","this","that","temp"]:
+            if segment in ["constant","local","argument","this","that","temp",
+                           "pointer"]:
 
                 hackstring += self.getsegmentivalueinD(segment, index)
 
@@ -243,6 +252,17 @@ class CodeWriter:
             elif segment == "temp":
                 hackstring += self.popstackto("D","M")
                 hackstring += self.a_instr(str(int(index)+5)) + "A=M\nM=D\n"
+
+            elif segment == "pointer":
+                hackstring += self.popstackto("D","M")
+                if index == "0":
+                    tempaddress = "THIS"
+                elif index == "1":
+                    tempaddress = "THAT"
+                else:
+                    raise ParsingError("pointer is " + index
+                                       + " must only be 0 or 1")
+                hackstring += self.a_instr(tempaddress) + "A=M\nM=D\n"
 
         self.fout.write(hackstring)
 
